@@ -41,13 +41,11 @@
 
 */
 
-import { axiosRequest } from "@/util/axiosInstance";
-import { LoaderFunctionArgs, useLoaderData, useParams } from "react-router-dom";
+import { useLoaderData, useParams } from "react-router-dom";
 import { PostType } from "./Posts";
-import { UserType } from "@/context/AuthProvider";
-import axios, { CancelTokenSource } from "axios";
+import { UserType } from "./Users";
 
-type CommentType = {
+export type CommentType = {
   postId: number;
   id: number;
   name: string;
@@ -55,7 +53,7 @@ type CommentType = {
   body: string;
 };
 
-type PostLoaderDataType = {
+export type PostLoaderDataType = {
   post: PostType;
   comments: CommentType[];
   user: UserType;
@@ -104,56 +102,4 @@ const Post = () => {
   );
 };
 
-// axiosRequest 에서 에러 처리가 되고 있으므로, loader 에서의 에러 처리는 굳이 필요 없다.
-// AbortController 역시 axiosRequest 에서 처리되고 있으므로, loader 에서의 처리는 필요 없다.
-const loader = async ({
-  params,
-}: LoaderFunctionArgs): Promise<PostLoaderDataType | null> => {
-  //   console.log(params.postId);
-  const config = { method: "GET" };
-  const cancelTokens: CancelTokenSource[] = [];
-
-  try {
-    const postResult = await axiosRequest({
-      endPoint: "/posts/" + params.postId,
-      config,
-    });
-    if (postResult?.cancelToken) cancelTokens.push(postResult.cancelToken);
-    const postData: PostType = postResult?.data;
-
-    const commentResult = await axiosRequest({
-      endPoint: `/posts/${params.postId}/comments`,
-      config,
-    });
-    if (commentResult?.cancelToken)
-      cancelTokens.push(commentResult.cancelToken);
-    const commentData: CommentType[] = commentResult?.data;
-
-    const userResult = await axiosRequest({
-      endPoint: `/users/${postData.userId}`,
-      config,
-    });
-    if (userResult?.cancelToken) cancelTokens.push(userResult.cancelToken);
-    const userData: UserType = userResult?.data;
-
-    return { post: postData, comments: commentData, user: userData };
-  } catch (e) {
-    if (axios.isCancel(e)) {
-      console.log("Request canceled", e.message);
-      return null;
-    }
-    throw e;
-  } finally {
-    // 모든 요청 취소 (이미 완료된 요청에는 영향 없음)
-    cancelTokens.forEach((cancelToken) => {
-      cancelToken.cancel("Request canceled by cleanup");
-    });
-  }
-};
-
-const PostRoute = {
-  element: <Post />,
-  loader,
-};
-
-export default PostRoute;
+export default Post;

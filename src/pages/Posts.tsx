@@ -7,11 +7,18 @@ Suspense 를 사용하면, useLoaderData() 가 프라미스를 리턴해야 하�
 
 */
 
-import { axiosRequest } from "@/util/axiosInstance";
-import React, { Suspense } from "react";
-import { Await, defer, useLoaderData, useSearchParams } from "react-router-dom";
+import React, { Suspense, useTransition } from "react";
+import {
+  Await,
+  useAsyncError,
+  useLoaderData,
+  useSearchParams,
+} from "react-router-dom";
 import PostsContent from "./posts/PostsContent";
 import LoadingMain from "@/components/main/LoadingMain";
+import { ErrorBoundary } from "react-error-boundary";
+
+export const DATASET_SIZE = 100;
 
 export type PostType = {
   userId: number;
@@ -20,59 +27,59 @@ export type PostType = {
   body: string;
 };
 
-export const ITEMS_PER_PAGE = 10;
-export const DATASET_SIZE = 100;
-
 const Posts: React.FC = () => {
-  const { data } = useLoaderData() as { data: Promise<PostType> };
+  const postsPromise = useLoaderData() as {
+    initialData: Promise<PostType[]>;
+    fetchMore: (start: number, end: number) => Promise<PostType[]>;
+  };
   const [searchParams, setSearchParams] = useSearchParams();
   const currentPage = Number(searchParams.get("page") || "1");
+
+  // useTransition을 사용하여 전환 상태 관리
+  const [isPending, startTransition] = useTransition();
 
   return (
     <div className="bg-accent w-full min-h-screen p-8">
       <h1 className="text-4xl font-bold mb-8">Posts</h1>
-      <Suspense fallback={<LoadingMain />}>
-        <Await resolve={data} errorElement={<div>Error occurred</div>}>
-          {(resolvedData) => {
-            console.log(resolvedData);
-            return (
-              <PostsContent
-                posts={resolvedData}
-                currentPage={currentPage}
-                setSearchParams={setSearchParams}
-              />
-            );
-          }}
-        </Await>
-      </Suspense>
+      <ErrorBoundary fallback={<div>Error loading posts</div>}>
+        <Suspense fallback={<LoadingMain />}>
+          <Await
+            resolve={postsPromise.initialData}
+            errorElement={<AsyncErrorHandler />}
+          >
+            {(resolvedData) => {
+              console.log(resolvedData);
+              return (
+                <PostsContent
+                  initialPosts={resolvedData}
+                  currentPage={currentPage}
+                  setSearchParams={(params) => {
+                    // 전환을 시작하여 React에게 작업이 일시 중단될 수 있음을 알림
+                    startTransition(() => {
+                      setSearchParams(params);
+                    });
+                  }}
+                  fetchMore={postsPromise.fetchMore}
+                />
+              );
+            }}
+          </Await>
+        </Suspense>
+      </ErrorBoundary>
     </div>
   );
 };
 
-// 2024-08-02 05:55:56
-// loader 가 Suspense 에서 관리되므로, 이제 cancelToken 을 제거합니다.
-// cancelToken 이 필요 없어졌으므로, try-catch 도 필요 없어졌습니다.
-const loader = () => {
-  const postsRequest = async () => {
-    const config = { method: "GET" };
-
-    const postsResult = await axiosRequest({
-      endPoint: "/posts",
-      config,
-    });
-    const postsData: PostType[] = postsResult?.data;
-
-    console.log(postsData);
-    return postsData;
-  };
-
-  return defer({ data: postsRequest() });
-  // return await postsRequest();
+const AsyncErrorHandler = () => {
+  const error = useAsyncError();
+  return <div>{error.message}</div>;
 };
 
-const PostsRoute = {
-  element: <Posts />,
-  loader,
+// ErrorComponent.tsx
+const ErrorComponent = () => {
+  const error = useAsyncError();
+  console.error("Data loading error:", error);
+  return <div>Error occurred: {error.message}</div>;
 };
 
-export default PostsRoute;
+export default Posts;

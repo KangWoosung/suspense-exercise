@@ -2,19 +2,25 @@
 
 
 */
+import { lazy } from "react";
 import { createBrowserRouter, RouteObject } from "react-router-dom";
 import RootLayout from "./layout/RootLayout";
 import Home from "./pages/Home";
 import Popup from "./pages/Popup";
 import DialogPopup from "./pages/popup/DialogPopup";
-import PostsRoute from "./pages/Posts";
-import PostRoute from "./pages/Post";
-import UsersRoute from "./pages/Users";
-import UserRoute from "./pages/User";
 import TodosRoute from "./pages/Todos";
 import Signin from "./pages/Signin";
 import NotFound404 from "./layout/codePages/NotFound404";
 import ErrorPage from "./layout/errorPages/ErrorPage";
+import usersLoader from "./loaders/usersLoader";
+import userLoader from "./loaders/userLoader";
+import postsLoader from "./loaders/postsLoader";
+import postLoader from "./loaders/postLoader";
+
+const Posts = lazy(() => import("./pages/Posts"));
+const Post = lazy(() => import("./pages/Post"));
+const Users = lazy(() => import("./pages/Users"));
+const User = lazy(() => import("./pages/User"));
 
 const routes: RouteObject[] = [
   {
@@ -34,15 +40,15 @@ const routes: RouteObject[] = [
           {
             path: "/posts",
             children: [
-              { index: true, ...PostsRoute },
-              { path: ":postId", ...PostRoute },
+              { index: true, element: <Posts />, loader: postsLoader },
+              { path: ":postId", element: <Post />, loader: postLoader },
             ],
           },
           {
             path: "/users",
             children: [
-              { index: true, ...UsersRoute },
-              { path: ":userId", ...UserRoute },
+              { index: true, element: <Users />, loader: usersLoader },
+              { path: ":userId", element: <User />, loader: userLoader },
             ],
           },
           { path: "/todos", ...TodosRoute },

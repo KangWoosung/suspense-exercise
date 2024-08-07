@@ -5,27 +5,52 @@
 
 import Pagination from "@/components/Pagination";
 import { Link, SetURLSearchParams } from "react-router-dom";
-import { ITEMS_PER_PAGE, PostType } from "../Posts";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { PostType } from "../Posts";
+import { DATASET_SIZE, ITEMS_PER_PAGE } from "@/lib/constants";
 
-const PostsContent: React.FC<{
-  posts: PostType[];
+type PostsContentProps = {
+  initialPosts: PostType[];
   currentPage: number;
   setSearchParams: SetURLSearchParams;
-}> = ({ posts, currentPage, setSearchParams }) => {
-  const [currentPosts, setCurrentPosts] = useState<PostType[]>([]);
+  fetchMore: (start: number, end: number) => Promise<PostType[]>;
+};
 
-  useEffect(() => {
+const PostsContent: React.FC<PostsContentProps> = ({
+  initialPosts,
+  currentPage,
+  setSearchParams,
+  fetchMore,
+}) => {
+  const [allPosts, setAllPosts] = useState<PostType[]>(initialPosts);
+  const [currentPosts, setCurrentPosts] = useState<PostType[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const updateCurrentPosts = useCallback(() => {
     const indexOfLastPost = currentPage * ITEMS_PER_PAGE;
     const indexOfFirstPost = indexOfLastPost - ITEMS_PER_PAGE;
-    setCurrentPosts(posts.slice(indexOfFirstPost, indexOfLastPost));
-  }, [currentPage, posts]);
+    setCurrentPosts(allPosts.slice(indexOfFirstPost, indexOfLastPost));
+  }, [allPosts, currentPage]);
 
-  const totalPages = Math.ceil(posts.length / ITEMS_PER_PAGE);
+  useEffect(() => {
+    updateCurrentPosts();
+  }, [updateCurrentPosts]);
 
-  const handlePageChange = (pageNumber: number) => {
+  const handlePageChange = async (pageNumber: number) => {
+    const newStartIndex = (pageNumber - 1) * ITEMS_PER_PAGE;
+    if (newStartIndex >= allPosts.length) {
+      setIsLoading(true);
+      const newPosts = await fetchMore(
+        allPosts.length,
+        allPosts.length + DATASET_SIZE
+      );
+      setAllPosts((prev) => [...prev, ...newPosts]);
+      setIsLoading(false);
+    }
     setSearchParams({ page: pageNumber.toString() });
   };
+
+  const totalPages = Math.ceil(allPosts.length / ITEMS_PER_PAGE);
 
   return (
     <>
@@ -51,6 +76,7 @@ const PostsContent: React.FC<{
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={handlePageChange}
+        isLoading={isLoading}
       />
     </>
   );

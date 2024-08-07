@@ -1,7 +1,6 @@
 import LoadingMain from "@/components/main/LoadingMain";
-import { axiosRequest } from "@/util/axiosInstance";
 import React, { Suspense } from "react";
-import { Await, defer, Link, useLoaderData } from "react-router-dom";
+import { Await, Link, useLoaderData } from "react-router-dom";
 
 export type UserType = {
   id: number;
@@ -38,7 +37,7 @@ const Users: React.FC = () => {
       <Suspense fallback={<LoadingMain />}>
         <Await resolve={users} errorElement={<div>Error occurred</div>}>
           {(resolvedUsers) => {
-            console.log("Users data loaded:", resolvedUsers);
+            console.log("Users data in AWAIT:", resolvedUsers);
             return (
               <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
                 {resolvedUsers.map((user: UserType) => (
@@ -86,28 +85,4 @@ const Users: React.FC = () => {
   );
 };
 
-// 2024-08-02 05:55:56
-// loader 가 Suspense 에서 관리되므로, 이제 cancelToken 을 제거합니다.
-// cancelToken 이 필요 없어졌으므로, try-catch 도 필요 없어졌습니다.
-const loader = () => {
-  const usersRequest = async () => {
-    const config = { method: "GET" };
-
-    const userResult = await axiosRequest({
-      endPoint: "/users",
-      config,
-    });
-    const userData: UserType = userResult?.data;
-
-    return userData;
-  };
-
-  return defer({ users: usersRequest() });
-};
-
-const UsersRoute = {
-  element: <Users />,
-  loader,
-};
-
-export default UsersRoute;
+export default Users;

@@ -20,29 +20,33 @@
       </div> 
 */
 
+import { MAX_PAGES_TO_SHOW } from "@/lib/constants";
+import React from "react";
+
 type PaginationProps = {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
+  isLoading?: boolean;
 };
-
-import React from "react";
-
-const maxPagesToShow = 5; // 한 번에 보여줄 최대 페이지 수
 
 const Pagination: React.FC<PaginationProps> = ({
   currentPage,
   totalPages,
   onPageChange,
+  isLoading,
 }) => {
   const renderPageNumbers = () => {
     const pageNumbers = [];
 
-    let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
-    const endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+    let startPage = Math.max(
+      1,
+      currentPage - Math.floor(MAX_PAGES_TO_SHOW / 2)
+    );
+    const endPage = Math.min(totalPages, startPage + MAX_PAGES_TO_SHOW - 1);
 
-    if (endPage - startPage + 1 < maxPagesToShow) {
-      startPage = Math.max(1, endPage - maxPagesToShow + 1);
+    if (endPage - startPage + 1 < MAX_PAGES_TO_SHOW) {
+      startPage = Math.max(1, endPage - MAX_PAGES_TO_SHOW + 1);
     }
 
     for (let i = startPage; i <= endPage; i++) {
@@ -95,6 +99,9 @@ const Pagination: React.FC<PaginationProps> = ({
       >
         &gt;&gt;
       </button>
+      {isLoading && (
+        <span className="text-sm text-blue-500">Loading more posts...</span>
+      )}
     </div>
   );
 };

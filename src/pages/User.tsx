@@ -1,9 +1,7 @@
 import React from "react";
 import { UserType } from "./Users";
-import { axiosRequest } from "@/util/axiosInstance";
-import { Link, LoaderFunctionArgs, useLoaderData } from "react-router-dom";
+import { Link, useLoaderData } from "react-router-dom";
 import { PostType } from "./Posts";
-import axios, { CancelTokenSource } from "axios";
 
 type UserLoaderDataType = {
   user: UserType;
@@ -105,45 +103,4 @@ const User: React.FC = () => {
   );
 };
 
-const loader = async ({
-  params,
-}: LoaderFunctionArgs): Promise<UserLoaderDataType | null> => {
-  const config = { method: "GET" };
-  const cancelTokens: CancelTokenSource[] = [];
-
-  try {
-    const userResult = await axiosRequest({
-      endPoint: `/users/${params.userId}`,
-      config,
-    });
-    if (userResult?.cancelToken) cancelTokens.push(userResult.cancelToken);
-    const userData: UserType = userResult?.data;
-
-    const postsResult = await axiosRequest({
-      endPoint: `/users/${params.userId}/posts`,
-      config,
-    });
-    if (postsResult?.cancelToken) cancelTokens.push(postsResult.cancelToken);
-    const postsData: PostType[] = postsResult?.data;
-
-    return { user: userData, posts: postsData };
-  } catch (e) {
-    if (axios.isCancel(e)) {
-      console.log("Request canceled", e.message);
-      return null;
-    }
-    throw e;
-  } finally {
-    // 모든 요청 취소 (이미 완료된 요청에는 영향 없음)
-    cancelTokens.forEach((cancelToken) => {
-      cancelToken.cancel("Request canceled by cleanup");
-    });
-  }
-};
-
-const UserRoute = {
-  element: <User />,
-  loader,
-};
-
-export default UserRoute;
+export default User;
