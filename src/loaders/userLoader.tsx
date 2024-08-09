@@ -3,11 +3,6 @@ import { UserType } from "@/pages/Users";
 import { axiosRequest } from "@/util/axiosInstance";
 import { defer, LoaderFunctionArgs } from "react-router-dom";
 
-// type UserLoaderDataType = {
-//     user: UserType;
-//     posts: PostType[];
-//   };
-
 const userLoader = async ({ params }: LoaderFunctionArgs) => {
   const userRequest = async () => {
     const config = { method: "GET" };
@@ -18,15 +13,21 @@ const userLoader = async ({ params }: LoaderFunctionArgs) => {
     });
     const userData: UserType = userResult?.data;
 
+    return { user: userData };
+  };
+
+  const postsRequest = async () => {
+    const config = { method: "GET" };
+
     const postsResult = await axiosRequest({
       endPoint: `/users/${params.userId}/posts`,
       config,
     });
     const postsData: PostType[] = postsResult?.data;
 
-    return { user: userData, posts: postsData };
+    return { posts: postsData };
   };
-  return defer({ user: userRequest() });
+  return defer({ userPromise: userRequest(), postsPromise: postsRequest() });
 };
 
 export default userLoader;

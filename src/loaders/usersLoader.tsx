@@ -20,7 +20,7 @@ const usersLoader = () => {
     return userData;
   };
 
-  return defer({ users: usersRequest() });
+  return defer({ usersPromise: usersRequest() });
 };
 
 export default usersLoader;

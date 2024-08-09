@@ -45,9 +45,9 @@ import {
 import { useEffect, useState } from "react";
 import { useLoaderData } from "react-router-dom";
 import AddTodoForm from "./todo/AddTodoForm";
-import axios, { CancelTokenSource } from "axios";
 import { AnimatePresence } from "framer-motion";
 import Todo from "./Todo";
+import { wait } from "@/util/misc";
 
 export type TodosLoaderDataType = {
   userId?: number;
@@ -124,51 +124,25 @@ const Todos = () => {
 // localStorage 에서 todos 를 찾아보고, 없으면 그 때 Jsonplaceholder 에 요청해서 초기 데이터를 받아오기로 하자. 디폴트 데이터는 localStorage 에서 꺼내서 리턴해준다.
 const loader = async () => {
   const config = { method: "GET" };
-  const cancelTokens: CancelTokenSource[] = [];
 
   let todosData: TodosLoaderDataType[] = [];
+  let returnData: TodosLoaderDataType[] = [];
 
-  try {
-    todosData = loadTodosFromLocalStorage();
-    if (todosData?.length > 0) {
-      return todosData;
-    }
-    const todosResult = await axiosRequest({
-      endPoint: "/todos",
-      config,
-    });
-    if (todosResult?.cancelToken) cancelTokens.push(todosResult.cancelToken);
-    todosData = todosResult.data as TodoType[];
-
-    return todosData.sort((a, b) => b.id - a.id);
-  } catch (e) {
-    if (axios.isCancel(e)) {
-      console.log("Request canceled", e.message);
-      return null;
-    }
-    throw e;
-  } finally {
-    // 모든 요청 취소 (이미 완료된 요청에는 영향 없음)
-    cancelTokens.forEach((cancelToken) => {
-      cancelToken.cancel("Request canceled by cleanup");
-    });
+  todosData = loadTodosFromLocalStorage();
+  if (todosData?.length > 0) {
+    returnData = todosData;
   }
-};
-
-/*
-// action
-const action = async (req) => {
-  const formData = await req.formData();
-  const title = formData.get("title");
-  const completed = formData.get("completed");
-
-  const config = { method: "POST", body: JSON.stringify(title, completed) };
-  const todo = await axiosRequest({
-    endPoint: "/new",
+  const todosResult = await axiosRequest({
+    endPoint: "/todos",
     config,
   });
+  returnData = todosResult.data as TodoType[];
+
+  return wait(
+    1000,
+    returnData.sort((a, b) => b.id - a.id)
+  );
 };
-*/
 
 const TodosRoute = {
   element: <Todos />,

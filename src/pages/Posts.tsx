@@ -7,16 +7,16 @@ Suspense 를 사용하면, useLoaderData() 가 프라미스를 리턴해야 하�
 
 */
 
-import React, { Suspense, useTransition } from "react";
+import React, { lazy, Suspense } from "react";
 import {
   Await,
   useAsyncError,
   useLoaderData,
   useSearchParams,
 } from "react-router-dom";
-import PostsContent from "./posts/PostsContent";
 import LoadingMain from "@/components/main/LoadingMain";
-import { ErrorBoundary } from "react-error-boundary";
+
+const PostsContent = lazy(() => import("./posts/PostsContent"));
 
 export const DATASET_SIZE = 100;
 
@@ -35,51 +35,41 @@ const Posts: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const currentPage = Number(searchParams.get("page") || "1");
 
-  // useTransition을 사용하여 전환 상태 관리
-  const [isPending, startTransition] = useTransition();
-
   return (
     <div className="bg-accent w-full min-h-screen p-8">
       <h1 className="text-4xl font-bold mb-8">Posts</h1>
-      <ErrorBoundary fallback={<div>Error loading posts</div>}>
-        <Suspense fallback={<LoadingMain />}>
-          <Await
-            resolve={postsPromise.initialData}
-            errorElement={<AsyncErrorHandler />}
-          >
-            {(resolvedData) => {
-              console.log(resolvedData);
-              return (
-                <PostsContent
-                  initialPosts={resolvedData}
-                  currentPage={currentPage}
-                  setSearchParams={(params) => {
-                    // 전환을 시작하여 React에게 작업이 일시 중단될 수 있음을 알림
-                    startTransition(() => {
-                      setSearchParams(params);
-                    });
-                  }}
-                  fetchMore={postsPromise.fetchMore}
-                />
-              );
-            }}
-          </Await>
-        </Suspense>
-      </ErrorBoundary>
+      <Suspense fallback={<LoadingMain />}>
+        <Await
+          resolve={postsPromise.initialData}
+          errorElement={<AsyncErrorHandler />}
+        >
+          {(resolvedData) => {
+            console.log(resolvedData);
+            return (
+              <PostsContent
+                initialPosts={resolvedData}
+                currentPage={currentPage}
+                setSearchParams={setSearchParams}
+                fetchMore={postsPromise.fetchMore}
+              />
+            );
+          }}
+        </Await>
+      </Suspense>
     </div>
   );
 };
 
 const AsyncErrorHandler = () => {
   const error = useAsyncError();
-  return <div>{error.message}</div>;
+  return <div>{(error as Error).message}</div>;
 };
 
 // ErrorComponent.tsx
-const ErrorComponent = () => {
-  const error = useAsyncError();
-  console.error("Data loading error:", error);
-  return <div>Error occurred: {error.message}</div>;
-};
+// const ErrorComponent = () => {
+//   const error = useAsyncError();
+//   console.error("Data loading error:", error);
+//   return <div>Error occurred: {(error as Error).message}</div>;
+// };
 
 export default Posts;
