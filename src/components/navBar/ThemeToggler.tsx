@@ -33,7 +33,7 @@ export function ModeToggle() {
   }, [theme]);
 
   return (
-    <div className="flex flex-row justify-between items-center w-[100%] gap-4 h-12 rounded-xl p-4">
+    <div className="flex flex-row justify-center items-center gap-4 h-12 rounded-xl p-4">
       <div className=" ">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
