@@ -24,6 +24,7 @@ const Pagination: React.FC<PaginationProps> = ({
 }) => {
   const renderPageNumbers = () => {
     const pageNumbers = [];
+    console.log(currentDatasetRange, totalItems);
 
     let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
     const endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
